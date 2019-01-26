@@ -65,3 +65,12 @@ class DataLoader:
             imgs_B = np.array(imgs_B) / 127.5 - 1.
 
             yield imgs_A, imgs_B
+
+    def load_img(self, path):
+        img = self.imread(path)
+        img = scipy.misc.imresize(img, self.img_res)
+        img = img/127.5 - 1.
+        return img[np.newaxis, :, :, :]
+
+    def imread(self, path):
+        return scipy.misc.imread(path, mode='RGB').astype(np.float)
