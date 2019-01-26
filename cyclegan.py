@@ -204,3 +204,7 @@ class CycleGAN:
                          np.mean(g_loss[5:6]),
                          elapsed_time))
 
+
+if __name__ == '__main__':
+    gan = CycleGAN()
+    gan.train(epochs=30, batch_size=20, sample_interval=50)
