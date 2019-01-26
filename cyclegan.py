@@ -4,7 +4,9 @@ from keras.layers.advanced_activations import LeakyReLU
 from keras.layers.convolutional import UpSampling2D, Conv2D
 from keras.models import Sequential, Model
 from keras.optimizers import Adam
+import datetime
 from data_loader import DataLoader
+import numpy as np
 
 
 class CycleGAN:
@@ -146,3 +148,59 @@ class CycleGAN:
         validity = Conv2D(1, kernel_size=4, strides=1, padding='same')(d4)
 
         return Model(img, validity)
+
+    def train(self, epochs, batch_size=1, sample_interval=50):
+
+        start_time = datetime.datetime.now()
+
+        # Adversarial loss ground truths
+        valid = np.ones((batch_size,) + self.disc_patch)
+        fake = np.zeros((batch_size,) + self.disc_patch)
+
+        for epoch in range(epochs):
+            for batch_i, (imgs_A, imgs_B) in enumerate(self.data_loader.load_batch(batch_size)):
+
+                # ----------------------
+                #  Train Discriminators
+                # ----------------------
+
+                # Translate images to opposite domain
+                fake_B = self.g_AB.predict(imgs_A)
+                fake_A = self.g_BA.predict(imgs_B)
+
+                # Train the discriminators (original images = real / translated = Fake)
+                dA_loss_real = self.d_A.train_on_batch(imgs_A, valid)
+                dA_loss_fake = self.d_A.train_on_batch(fake_A, fake)
+                dA_loss = 0.5 * np.add(dA_loss_real, dA_loss_fake)
+
+                dB_loss_real = self.d_B.train_on_batch(imgs_B, valid)
+                dB_loss_fake = self.d_B.train_on_batch(fake_B, fake)
+                dB_loss = 0.5 * np.add(dB_loss_real, dB_loss_fake)
+
+                # Total disciminator loss
+                d_loss = 0.5 * np.add(dA_loss, dB_loss)
+
+                # ------------------
+                #  Train Generators
+                # ------------------
+
+                # Train the generators
+                g_loss = self.combined.train_on_batch([imgs_A, imgs_B],
+                                                      [valid, valid,
+                                                       imgs_A, imgs_B,
+                                                       imgs_A, imgs_B])
+
+                elapsed_time = datetime.datetime.now() - start_time
+
+                # Plot the progress
+                print("[Epoch %d/%d] [Batch %d/%d] [D loss: %f, acc: %3d%%] [G loss: %05f, adv: %05f, recon: %05f, "
+                      "id: %05f] time: %s " \
+                      % (epoch, epochs,
+                         batch_i, self.data_loader.n_batches,
+                         d_loss[0], 100 * d_loss[1],
+                         g_loss[0],
+                         np.mean(g_loss[1:3]),
+                         np.mean(g_loss[3:5]),
+                         np.mean(g_loss[5:6]),
+                         elapsed_time))
+
