@@ -1,3 +1,7 @@
+import scipy
+from glob import glob
+import numpy as np
+
 
 class DataLoader:
 
