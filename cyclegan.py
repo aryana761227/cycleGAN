@@ -256,6 +256,8 @@ class CycleGAN:
         plt.close()
 
     def accuracy_chart(self):
+        if os.path.exists("demofile.txt"):
+            os.remove("demofile.txt")
         stochs = open("stoch.txt", "a+")
         for i in range(len(self.epoch_accuracy)):
             stochs.write("epoch : {} mean accuracy : {}".format(i, self.epoch_accuracy[i]))
