@@ -14,15 +14,22 @@ import os
 
 class CycleGAN:
 
-    def __init__(self):
+    def __init__(self, case_number):
         # Input shape
         self.img_rows = 128
         self.img_cols = 128
         self.channels = 3
         self.img_shape = (self.img_rows, self.img_cols, self.channels)
 
+        self.epoch_accuracy = []
+
         # Configure data loader
-        self.dataset_name = 'apple2orange'
+        if case_number == 0:
+            self.dataset_name = 'apple2orange'
+        elif case_number == 1:
+            self.dataset_name = 'horse2zebra'
+        elif case_number == 2:
+            self.dataset_name = 'summer2winter_yosemite'
         self.data_loader = DataLoader(self.dataset_name, (self.img_rows, self.img_cols))
 
         # Calculate output shape of D (PatchGAN)
@@ -159,8 +166,9 @@ class CycleGAN:
         # Adversarial loss ground truths
         valid = np.ones((batch_size,) + self.disc_patch)
         fake = np.zeros((batch_size,) + self.disc_patch)
-
+        self.epoch_accuracy = [0 for i in range(epochs)]
         for epoch in range(epochs):
+
             for batch_i, (imgs_A, imgs_B) in enumerate(self.data_loader.load_batch(batch_size)):
 
                 # ----------------------
@@ -171,17 +179,21 @@ class CycleGAN:
                 fake_B = self.g_AB.predict(imgs_A)
                 fake_A = self.g_BA.predict(imgs_B)
 
+
                 # Train the discriminators (original images = real / translated = Fake)
                 dA_loss_real = self.d_A.train_on_batch(imgs_A, valid)
                 dA_loss_fake = self.d_A.train_on_batch(fake_A, fake)
                 dA_loss = 0.5 * np.add(dA_loss_real, dA_loss_fake)
+                # print(dA_loss_real, "1111111")
 
                 dB_loss_real = self.d_B.train_on_batch(imgs_B, valid)
                 dB_loss_fake = self.d_B.train_on_batch(fake_B, fake)
+                # print(dB_loss_fake, "22222222")
                 dB_loss = 0.5 * np.add(dB_loss_real, dB_loss_fake)
 
                 # Total disciminator loss
                 d_loss = 0.5 * np.add(dA_loss, dB_loss)
+                # print(d_loss)
 
                 # ------------------
                 #  Train Generators
@@ -194,7 +206,7 @@ class CycleGAN:
                                                        imgs_A, imgs_B])
 
                 elapsed_time = datetime.datetime.now() - start_time
-
+                self.epoch_accuracy[epoch] += (100 * d_loss[1]) / self.data_loader.n_batches
                 # Plot the progress
                 print("[Epoch %d/%d] [Batch %d/%d] [D loss: %f, acc: %3d%%] [G loss: %05f, adv: %05f, recon: %05f, "
                       "id: %05f] time: %s " \
@@ -210,6 +222,7 @@ class CycleGAN:
                 # If at save interval => save generated image samples
                 if batch_i % sample_interval == 0:
                     self.test(epoch, batch_i)
+        self.accuracy_chart()
 
     def test(self, epoch, batch_i):
         os.makedirs('images/%s' % self.dataset_name, exist_ok=True)
@@ -242,7 +255,13 @@ class CycleGAN:
         fig.savefig("images/%s/%d_%d.png" % (self.dataset_name, epoch, batch_i))
         plt.close()
 
+    def accuracy_chart(self):
+        stochs = open("stoch.txt", "a+")
+        for i in range(len(self.epoch_accuracy)):
+            stochs.write("epoch : {} mean accuracy : {}".format(i, self.epoch_accuracy[i]))
+        stochs.close()
+
 
 if __name__ == '__main__':
-    gan = CycleGAN()
-    gan.train(epochs=30, batch_size=20, sample_interval=50)
+    gan = CycleGAN(1)
+    gan.train(epochs=200, batch_size=5, sample_interval=50)
