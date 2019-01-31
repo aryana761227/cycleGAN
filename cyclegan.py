@@ -4,7 +4,7 @@ from keras.layers import Input, Dropout, Concatenate
 from keras.layers.advanced_activations import LeakyReLU
 from keras.layers.convolutional import UpSampling2D, Conv2D
 from keras.models import Model
-from keras.optimizers import Adam
+from keras.optimizers import Adam, RMSprop
 import datetime
 import matplotlib.pyplot as plt
 from data_loader import DataLoader
@@ -44,7 +44,9 @@ class CycleGAN:
         self.lambda_cycle = 10.0  # Cycle-consistency loss
         self.lambda_id = 0.1 * self.lambda_cycle  # Identity loss
 
-        optimizer = Adam(0.0002, 0.5)
+        optimizer = RMSprop(0.0002, 0.5)
+        # optimizer = Adam(0.0002, 0.5)
+
         # Build and compile the discriminators
         self.d_A = self.build_discriminator()
         self.d_B = self.build_discriminator()
@@ -265,5 +267,5 @@ class CycleGAN:
 
 
 if __name__ == '__main__':
-    gan = CycleGAN(1)
-    gan.train(epochs=200, batch_size=5, sample_interval=50)
+    gan = CycleGAN(0)
+    gan.train(epochs=30, batch_size=20, sample_interval=50)
