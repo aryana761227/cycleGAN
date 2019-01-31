@@ -9,7 +9,7 @@ before running the code this packages must be installed
 for installing keras_contrib enter this command in the terminal:
 pip install git+https://github.com/keras-team/keras-contrib.git
 
-#run the code
+# run the code
 for running the code just run this command on terminal:
 python3 cyclegan.py
 
